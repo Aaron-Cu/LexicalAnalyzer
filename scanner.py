@@ -16,7 +16,6 @@ def openFile():
     file.close()
     print("The opened file contains:\n")
     printFile()
-    printChar()
 
 def printFile():
     global fileMem
@@ -49,10 +48,16 @@ def lexerToFile():
                         f.write(str('lexme'+str(counter+1).rjust(3, ' ')+':'+lexeme+'\n'))
                         lexeme = ''
                         counter = counter + 1
+        if lexeme == white_space:
+            lexeme = ''
         if lexeme != '':
+            lexeme = lexeme.replace('\n','<newline>')
+            lexeme = lexeme.replace('\t','<tab>')
+            lexeme = lexeme.replace('\r', '<return>')
             lexeme = lexeme.strip()
             f.write(str('lexme'+str(counter+1).rjust(3, ' ')+':'+lexeme+'\n'))
         f.close()
 
 openFile()
 lexerToFile()
+print("lex.txt now contains the parsed lexemes of given file.")
