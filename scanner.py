@@ -15,6 +15,8 @@ TermsDictionary = {
 TERMS = operands + keywords
 tokens = []
 
+# Takes a user input file name, opens and saves the contents
+# to fileMem. 
 def openFile():
     global file 
     global fileMem
@@ -25,15 +27,20 @@ def openFile():
     print("The opened file contains:\n")
     printFile()
 
+# Prints the contents of fileMem to the console. 
 def printFile():
     global fileMem
     print(fileMem)
         
+# Prints every char in order of the file in fileMem.
 def printChar():
     global fileMem
     for i, char in enumerate(fileMem):
         print('char', str(i+1).rjust(3, ' '), ':', char)
 
+# Generates a list of tokens from the source code file stored
+# in fileMem. The list is stored in memory as tokens, as well
+# written to the file lex.txt.
 def tokenizer():
     global fileMem
     global lexeme
@@ -69,6 +76,7 @@ def tokenizer():
             tokens.append(lexeme)
         f.close()
 
+# Prints the tokens of the scanned file. 
 def printTokens():
     global tokens
     for token in tokens:
@@ -76,5 +84,5 @@ def printTokens():
 
 openFile()
 tokenizer()
-print("lex.txt now contains the parsed tokens of given file.")
 printTokens()
+print("lex.txt now contains the parsed tokens of given file.")
