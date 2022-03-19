@@ -3,6 +3,8 @@ from curses.ascii import isdigit    # requires '$ pip install windows-curses' on
 
 file = None
 fileMem = ""
+lexemes = []
+tokens = []
 lexeme = ''
 white_space = ' '
 new_line = '\n'
@@ -28,8 +30,7 @@ TermsDictionary = {
     '<RETURN>' : 'RETURN'
 }
 TERMS = operands + keywords
-lexemes = []
-tokens = []
+
 
 # Takes a user input file name, opens and saves the contents
 # to fileMem. 
@@ -173,6 +174,34 @@ def recursiveParse(count = 0):
         elif tokens[counter][0] == 'CLOSED_PARENTHESIS':
             f.close()
             recursiveParse(counter+1)
+        elif tokens[counter][0] == 'ASSIGNMENT_STATEMENT':
+            print('['+(tokens[counter][0])+'] -> [ID] [INTEGER]')
+            f.write(str('['+(tokens[counter][0])+']'+'\n'))
+            if tokens[counter-1][0] == 'ID':
+                print('\t|[ID] -> ['+(tokens[counter-1][1])+']')
+                f.write(str('\t|[ID] -> ['+(tokens[counter-1][1])+']'+'\n'))
+            else:
+                print('[ERROR]')
+                f.write(str('[ERROR]'+'\n'))
+            if tokens[counter+1][0] == 'INTEGER':
+                print('\t|[INTEGER] -> ['+(tokens[counter+1][1])+']')
+                f.write(str('\t|[INTEGER] -> ['+(tokens[counter+1][1])+']'+'\n'))
+            else:
+                print('[ERROR]')
+                f.write(str('[ERROR]'+'\n'))
+            f.close()
+            recursiveParse(counter+2)
+        elif tokens[counter][0] == 'PRINT_STATEMENT':
+            print('['+(tokens[counter][0])+'] -> [ID]')
+            f.write(str('['+(tokens[counter][0])+']'+'\n'))
+            if tokens[counter+2][0] == 'ID' and tokens[counter+1][0] == 'OPEN_PARENTHESIS' and tokens[counter+3][0] == 'CLOSED_PARENTHESIS':
+                print('\t|[ID] -> ['+(tokens[counter+2][1])+']')
+                f.write(str('\t|[ID] -> ['+(tokens[counter+2][1])+']'+'\n'))
+            else:
+                print('[ERROR]')
+                f.write(str('[ERROR]'+'\n'))
+            f.close()
+            recursiveParse(counter+4)
         else:
             print('['+(tokens[counter][0])+']')
             f.write(str('['+(tokens[counter][0])+']'+'\n'))
@@ -182,6 +211,10 @@ def recursiveParse(count = 0):
 
 
 while input('Enter "y" to interpret a .jl file, enter to quit.\n') == 'y':
+    file = None
+    fileMem = ""
+    lexemes = []
+    tokens = []
     openFile()
     print('----------------------------------')
     lexer()
