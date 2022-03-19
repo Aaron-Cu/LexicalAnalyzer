@@ -181,15 +181,15 @@ def recursiveParse(count = 0):
 
 
 
-
-openFile()
-print('----------------------------------')
-lexer()
-printLexemes()
-print("lex.txt now contains the parsed lexemes of given file.")
-print('----------------------------------')
-tokenizer()
-printTokens()
-print('----------------------------------')
-print('Starting Parse..')
-recursiveParse()
+while input('Enter "y" to interpret a .jl file, enter to quit.\n') == 'y':
+    openFile()
+    print('----------------------------------')
+    lexer()
+    printLexemes()
+    print("lex.txt now contains the parsed lexemes of given file.")
+    print('----------------------------------')
+    tokenizer()
+    printTokens()
+    print('----------------------------------')
+    print('Starting Parse..')
+    recursiveParse()
