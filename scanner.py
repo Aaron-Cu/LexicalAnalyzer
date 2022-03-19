@@ -119,6 +119,7 @@ def tokenizer():
             tempToken = tokenLookUp(lexeme)
             tokens.append([tempToken,lexeme])
             f.write(str(tempToken+':'+lexeme+'\n'))
+    f.close()
 
 def printTokens():
     global tokens
@@ -133,34 +134,52 @@ def printTokens():
         tempToken=''
 
 def recursiveParse(count = 0):
+    if count == 0:
+        with open('par.txt', 'w') as f:
+            f.write('')
+            f.close()
     global tokens
-    if count > len(tokens):
-        print('went over')
-        return
-    counter = count
-    if tokens[counter][0] == 'NEW_LINE':
-        recursiveParse(counter+1)
-    elif tokens[counter][0] == 'COMMENT_STATEMENT':
-        skip = counter+1
-        while tokens[skip][0] != 'NEW_LINE':
-            skip = skip+1
-        recursiveParse(skip+1)
-    elif tokens[counter][0] == 'FUNCTION_STATEMENT':
-        print('[start] ->')
-        recursiveParse(counter+1)
-    elif tokens[counter][0] == 'END_STATEMENT':
-        print('[end]')
-    elif tokens[counter][0] == 'ID' or tokens[counter][0] == 'INTEGER':
-        recursiveParse(counter+1)
-    elif tokens[counter][0] == 'TAB':
-        recursiveParse(counter+1)
-    elif tokens[counter][0] == 'OPEN_PARENTHESIS':
-        recursiveParse(counter+1)
-    elif tokens[counter][0] == 'CLOSED_PARENTHESIS':
-        recursiveParse(counter+1)
-    else:
-        print(tokens[counter][0])
-        recursiveParse(counter+1)
+    with open('par.txt', 'a') as f:
+        if count > len(tokens):
+            print('went over')
+            return
+        counter = count
+        if tokens[counter][0] == 'NEW_LINE':
+            f.close()
+            recursiveParse(counter+1)
+        elif tokens[counter][0] == 'COMMENT_STATEMENT':
+            skip = counter+1
+            while tokens[skip][0] != 'NEW_LINE':
+                skip = skip+1
+            f.close()
+            recursiveParse(skip+1)
+        elif tokens[counter][0] == 'FUNCTION_STATEMENT':
+            print('[start] ->')
+            f.write(str('[start] ->'+'\n'))
+            f.close()
+            recursiveParse(counter+1)
+        elif tokens[counter][0] == 'END_STATEMENT':
+            print('[end]')
+            f.write(str('[end]'+'\n'))
+            f.close()
+        elif tokens[counter][0] == 'ID' or tokens[counter][0] == 'INTEGER':
+            f.close()
+            recursiveParse(counter+1)
+        elif tokens[counter][0] == 'TAB':
+            f.close()
+            recursiveParse(counter+1)
+        elif tokens[counter][0] == 'OPEN_PARENTHESIS':
+            f.close()
+            recursiveParse(counter+1)
+        elif tokens[counter][0] == 'CLOSED_PARENTHESIS':
+            f.close()
+            recursiveParse(counter+1)
+        else:
+            print('['+(tokens[counter][0])+']')
+            f.write(str('['+(tokens[counter][0])+']'+'\n'))
+            f.close()
+            recursiveParse(counter+1)   
+
 
 
 
