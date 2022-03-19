@@ -1,5 +1,4 @@
-from curses.ascii import isdigit
-
+from curses.ascii import isdigit    # requires '$ pip install windows-curses' on windows based systems.
 
 
 file = None
