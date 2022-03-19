@@ -1,3 +1,7 @@
+from curses.ascii import isdigit
+from email.policy import default
+
+
 file = None
 fileMem = ""
 lexeme = ''
@@ -10,9 +14,11 @@ TermsDictionary = {
     'end'      : 2,
     'print'    : 3,
     'while'    : 4,
-    'do'       : 5
+    'do'       : 5,
+    'integer'  : 6
 }
 TERMS = operands + keywords
+lexemes = []
 tokens = []
 
 # Takes a user input file name, opens and saves the contents
@@ -38,16 +44,16 @@ def printChar():
     for i, char in enumerate(fileMem):
         print('char', str(i+1).rjust(3, ' '), ':', char)
 
-# Generates a list of tokens from the source code file stored
-# in fileMem. The list is stored in memory as tokens, as well
+# Generates a list of lexemes from the source code file stored
+# in fileMem. The list is stored in memory as lexmes, as well
 # written to the file lex.txt.
-def tokenizer():
+def lexer():
     global fileMem
     global lexeme
     global white_space
     global new_line
     global TERMS
-    global tokens
+    global lexemes
     counter = 0
     with open('lex.txt', 'w') as f:
         for i, char in enumerate(fileMem):
@@ -61,8 +67,8 @@ def tokenizer():
                         lexeme = lexeme.replace('\t','<tab>')
                         lexeme = lexeme.replace('\r', '<return>')
                         lexeme = lexeme.strip()
-                        f.write(str('token'+str(counter+1).rjust(3, ' ')+':'+lexeme+'\n'))
-                        tokens.append(lexeme)
+                        f.write(str('lexeme'+str(counter+1).rjust(3, ' ')+':'+lexeme+'\n'))
+                        lexemes.append(lexeme)
                         lexeme = ''
                         counter = counter + 1
         if lexeme == white_space:
@@ -72,17 +78,38 @@ def tokenizer():
             lexeme = lexeme.replace('\t','<tab>')
             lexeme = lexeme.replace('\r', '<return>')
             lexeme = lexeme.strip()
-            f.write(str('token'+str(counter+1).rjust(3, ' ')+':'+lexeme+'\n'))
-            tokens.append(lexeme)
+            f.write(str('lexeme'+str(counter+1).rjust(3, ' ')+':'+lexeme+'\n'))
+            lexemes.append(lexeme)
         f.close()
 
-# Prints the tokens of the scanned file. 
-def printTokens():
+# Prints the lexems of the scanned file. 
+def printLexemes():
+    global lexemes
+    for lexeme in lexemes:
+        print(lexeme)
+
+def tokenLookUp(lexeme):
+    global TERMS
+    temp = ''
+    if lexeme in TERMS:
+        return TermsDictionary[lexeme]
+    if lexeme.isdigit():
+        return 'integer'
+    else:
+        return 'name?'
+    # .isdigit() find out if 
+        
+
+def tokenizer():
+    global lexemes
     global tokens
-    for token in tokens:
-        print(token)
+    with open('tkn.txt', 'w') as f:
+        for lexeme in lexemes:
+            tokens.appened(tokenLookUp(lexeme))
+
+
 
 openFile()
-tokenizer()
-printTokens()
-print("lex.txt now contains the parsed tokens of given file.")
+lexer()
+printLexemes()
+print("lex.txt now contains the parsed lexemes of given file.")
