@@ -180,8 +180,8 @@ def recursiveParse(count = 0):
     with open('par.txt', 'a') as f:
         counter = count
         if counter > len(tokens)-1:
-                print(indent+'[END_FILE]')
-                f.write(str(indent+'[END_FILE]'+'\n'))
+                print('\t|[END_FILE]')
+                f.write(str('\t|[END_FILE]'+'\n'))
                 f.close()
         elif tokens[counter][0] == 'NEW_LINE':
             f.close()
@@ -200,14 +200,18 @@ def recursiveParse(count = 0):
             recursiveParse(counter+1)
         elif tokens[counter][0] == 'END_STATEMENT':
             if parent == {-1}:
-                print(indent+'[END_FILE]')
-                f.write(str(indent+'[END_FILE]'+'\n'))
+                print("here"+ str(parent))
+                print('[END_FILE]')
+                f.write(str('[END_FILE]'+'\n'))
                 f.close()
             else:
+                parent.pop()
+                indent = ''
+                for i in range(len(parent)):
+                    indent = indent+'\t|'
                 print(indent+'[END_STATEMENT]')
                 f.write(str(indent+'[END_STATEMENT]'+'\n'))
                 f.close()
-                parent.pop()
                 recursiveParse(counter+1)
         elif tokens[counter][0] == 'ID' or tokens[counter][0] == 'INTEGER':
             f.close()
@@ -331,3 +335,5 @@ while input('Enter "y" to interpret a .jl file, enter to quit.\n') == 'y':
     print('----------------------------------')
     print('Starting Parse..')
     recursiveParse()
+    #for token, lex in tokens:
+    #    print(token+" : "+lex)
