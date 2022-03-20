@@ -9,16 +9,19 @@ lexeme = ''
 white_space = ' '
 new_line = '\n'
 operands = ['#','<','>','=','+','-','(',')','~','\n','\t', '\r','<newline>','<tab>','<return>']
-keywords = ['function', 'end', 'print', 'while', 'do', '//']
+keywords = ['if','else','function', 'end', 'print', 'while', 'do', '//', '==']
 TermsDictionary = {
     'function' : 'FUNCTION_STATEMENT',
     'end'      : 'END_STATEMENT',
     'print'    : 'PRINT_STATEMENT',
     'while'    : 'WHILE_STATEMENT',
     'do'       : 'DO_STATEMENT',
+    'if'       : 'IF_STATEMENT',
+    'else'     : 'ELSE_STATEMENT',
     '//'       : 'COMMENT_STATEMENT',
     '<'        : 'LESS_THAN_OPERATOR',
     '>'        : 'GREATER_THAN_OPERATOR',
+    '=='       : 'EQUAL_TO_OPERATOR',
     '='        : 'ASSIGNMENT_STATEMENT',
     '+'        : 'ADDITION_OPERATOR',
     '-'        : 'SUBTRACTION_OPERATOR',
@@ -100,10 +103,13 @@ def lexer():
                         lexeme = lexeme.replace('\t','<tab>')
                         lexeme = lexeme.replace('\r', '<return>')
                         lexeme = lexeme.strip()
-                        f.write(str('lexeme'+str(counter+1).rjust(3, ' ')+':'+lexeme+'\n'))
-                        lexemes.append(lexeme)
-                        lexeme = ''
-                        counter = counter + 1
+                        if lexeme == '=' and fileMem[i+1] == '=':
+                            counter = counter + 1
+                        else:
+                            f.write(str('lexeme'+str(counter+1).rjust(3, ' ')+':'+lexeme+'\n'))
+                            lexemes.append(lexeme)
+                            lexeme = ''
+                            counter = counter + 1
         if lexeme == white_space:
             lexeme = ''
         if lexeme != '':
@@ -111,6 +117,10 @@ def lexer():
             lexeme = lexeme.replace('\t','<tab>')
             lexeme = lexeme.replace('\r', '<return>')
             lexeme = lexeme.strip()
+            if lexeme == '=' and fileMem[i+1] == '==':
+                            counter = counter + 1
+                            i = i + 1
+                            lexeme += fileMem[i]
             f.write(str('lexeme'+str(counter+1).rjust(3, ' ')+':'+lexeme+'\n'))
             lexemes.append(lexeme)
         f.close()
@@ -212,7 +222,7 @@ def recursiveParse(count = 0):
             f.close()
             recursiveParse(counter+1)
         elif tokens[counter][0] == 'ASSIGNMENT_STATEMENT':
-            print(indent+'['+(tokens[counter][0])+'] -> [ID] [INTEGER]')
+            print(indent+'['+(tokens[counter][0])+'] -> [ID] [INTEGER] | [ID] [ARITHMETIC_STATEMENT]')
             f.write(str(indent+'['+(tokens[counter][0])+'] -> [ID] [INTEGER]'+'\n'))
             if tokens[counter-1][0] == 'ID':
                 print(indent+'\t|[ID] -> ['+(tokens[counter-1][1])+']')
@@ -223,17 +233,24 @@ def recursiveParse(count = 0):
             if tokens[counter+1][0] == 'INTEGER':
                 print(indent+'\t|[INTEGER] -> ['+(tokens[counter+1][1])+']')
                 f.write(str(indent+'\t|[INTEGER] -> ['+(tokens[counter+1][1])+']'+'\n'))
+            elif tokens[counter+2][0] == ('ADDITION_OPERATOR'):
+                print(indent+'\t|[ADDITION_OPERATOR] ->')
+                f.write(str(indent+'\t|[ADDITION_OPERATOR] ->'+'\n'))
+                parent.add(counter)
             else:
                 print('[ERROR]')
                 f.write(str('[ERROR]'+'\n'))
             f.close()
             recursiveParse(counter+2)
         elif tokens[counter][0] == 'PRINT_STATEMENT':
-            print(indent+'['+(tokens[counter][0])+'] -> [ID]')
+            print(indent+'['+(tokens[counter][0])+'] -> [ID] | [INTEGER]')
             f.write(str(indent+'['+(tokens[counter][0])+'] -> [ID]'+'\n'))
-            if tokens[counter+2][0] == 'ID' and tokens[counter+1][0] == 'OPEN_PARENTHESIS' and tokens[counter+3][0] == 'CLOSED_PARENTHESIS':
+            if (tokens[counter+2][0] == 'ID') and (tokens[counter+1][0] == 'OPEN_PARENTHESIS') and (tokens[counter+3][0] == 'CLOSED_PARENTHESIS'):
                 print(indent+'\t|[ID] -> ['+(tokens[counter+2][1])+']')
                 f.write(str(indent+'\t|[ID] -> ['+(tokens[counter+2][1])+']'+'\n'))
+            elif (tokens[counter+2][0] == 'INTEGER') and (tokens[counter+1][0] == 'OPEN_PARENTHESIS') and (tokens[counter+3][0] == 'CLOSED_PARENTHESIS'):
+                print(indent+'\t|[INTEGER] -> ['+(tokens[counter+2][1])+']')
+                f.write(str(indent+'\t|[INTEGER] -> ['+(tokens[counter+2][1])+']'+'\n'))
             else:
                 print('[ERROR]')
                 f.write(str('[ERROR]'+'\n'))
@@ -243,6 +260,50 @@ def recursiveParse(count = 0):
             parent.add(counter)
             print(indent+'['+(tokens[counter][0])+'] -> [STATEMENT] [DO]')
             f.write(str(indent+'['+(tokens[counter][0])+'] -> [STATEMENT] [DO]'+'\n'))
+            f.close()
+            recursiveParse(counter+1)
+        elif tokens[counter][0] == 'ADDITION_OPERATOR':
+            if counter not in parent:
+                print(indent+'['+(tokens[counter][0])+'] -> [ID] [INTEGER] | [ID] [ARITHMETIC_STATEMENT]')
+                f.write(str(indent+'['+(tokens[counter][0])+'] -> [ID] [INTEGER]'+'\n'))
+            if tokens[counter-1][0] == 'ID':
+                print(indent+'\t|[ID] -> ['+(tokens[counter-1][1])+']')
+                f.write(str(indent+'\t|[ID] -> ['+(tokens[counter-1][1])+']'+'\n'))
+            else:
+                print('[ERROR]')
+                f.write(str('[ERROR]'+'\n'))
+            if tokens[counter+1][0] == 'INTEGER':
+                print(indent+'\t|[INTEGER] -> ['+(tokens[counter+1][1])+']')
+                f.write(str(indent+'\t|[INTEGER] -> ['+(tokens[counter+1][1])+']'+'\n'))
+            elif tokens[counter+2][0] == ('ADDITION_OPERATOR'):
+                print(indent+'\t|[ADDITION_OPERATOR] ->')
+                f.write(str(indent+'\t|[ADDITION_OPERATOR] ->'+'\n'))
+                parent.add(counter)
+            else:
+                print('[ERROR]')
+                f.write(str('[ERROR]'+'\n'))
+            if counter in parent:
+                parent.pop()
+            f.close()
+            recursiveParse(counter+1)
+        elif tokens[counter][0] == 'IF_STATEMENT':
+            parent.add(counter)
+            print(indent+'['+(tokens[counter][0])+']')
+            f.write(str(indent+'['+(tokens[counter][0])+']'+'\n'))
+            f.close()
+            recursiveParse(counter+1)
+        elif tokens[counter][0] == 'ELSE_STATEMENT':
+            ifState = parent.pop()
+            if tokens[ifState][0] == 'IF_STATEMENT':
+                indent = ''
+                for i in range(len(parent)):
+                    indent = indent+'\t|'
+                parent.add(counter)
+                print(indent+'['+(tokens[counter][0])+']')
+                f.write(str(indent+'['+(tokens[counter][0])+']'+'\n'))
+            else:
+                print('[ERROR]')
+                f.write(str('[ERROR]'+'\n'))
             f.close()
             recursiveParse(counter+1)
         else:
