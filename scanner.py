@@ -256,6 +256,7 @@ def recursiveParse(count = 0):
 while input('Enter "y" to interpret a .jl file, enter to quit.\n') == 'y':
     file = None
     fileMem = ""
+    lexeme = ''
     lexemes = []
     tokens = []
     openFile()
