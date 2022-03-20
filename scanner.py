@@ -155,7 +155,7 @@ def printTokens():
         print(tempToken)
         tempToken=''
 
-parent = {0}
+parent = {-1}
 def recursiveParse(count = 0):
     global parent
     indent = ''
@@ -189,7 +189,7 @@ def recursiveParse(count = 0):
             parent.add(counter)
             recursiveParse(counter+1)
         elif tokens[counter][0] == 'END_STATEMENT':
-            if parent == {0}:
+            if parent == {-1}:
                 print(indent+'[END_FILE]')
                 f.write(str(indent+'[END_FILE]'+'\n'))
                 f.close()
