@@ -1,4 +1,4 @@
-from curses.ascii import isdigit    # requires '$ pip install windows-curses' on windows based systems.
+from curses.ascii import isdigit   # requires '$ pip install windows-curses' on windows based systems.
 
 
 file = None
@@ -8,7 +8,7 @@ tokens = []
 lexeme = ''
 white_space = ' '
 new_line = '\n'
-operands = ['<','>','=','+','-','(',')','~','\n','\t', '\r','<newline>','<tab>','<return>']
+operands = ['#','<','>','=','+','-','(',')','~','\n','\t', '\r','<newline>','<tab>','<return>']
 keywords = ['function', 'end', 'print', 'while', 'do', '//']
 TermsDictionary = {
     'function' : 'FUNCTION_STATEMENT',
@@ -27,9 +27,31 @@ TermsDictionary = {
     '~'        : 'APROXIMATION_OPERATOR',
     '<newline>': 'NEW_LINE',
     '<tab>'    : 'TAB',
-    '<RETURN>' : 'RETURN'
+    '<RETURN>' : 'RETURN',
+    '#'        : 'COMMENT_STATEMENT'
 }
 TERMS = operands + keywords
+
+class parseTree():
+    class treeNode():
+        nodeToken = None
+        childNodes = None
+        def __init__(self, tokenIn):
+            nodeToken = tokenIn
+
+    adjacencyList = None
+
+    def __init__(self):
+        return
+    
+    def appendChildStatement(parent, child):
+        return
+    
+    def appendStatement(tokenIn):
+        return
+
+        
+    
 
 
 # Takes a user input file name, opens and saves the contents
@@ -133,18 +155,25 @@ def printTokens():
         print(tempToken)
         tempToken=''
 
+parent = {0}
 def recursiveParse(count = 0):
+    global parent
+    indent = ''
+    for i in range(len(parent)):
+        indent = indent+'\t|'
     if count == 0:
         with open('par.txt', 'w') as f:
-            f.write('')
+            f.write('[START_FILE] ->')
+            print('[START_FILE] ->')
             f.close()
     global tokens
     with open('par.txt', 'a') as f:
-        if count > len(tokens):
-            print('went over')
-            return
         counter = count
-        if tokens[counter][0] == 'NEW_LINE':
+        if counter > len(tokens)-1:
+                print(indent+'[END_FILE]')
+                f.write(str(indent+'[END_FILE]'+'\n'))
+                f.close()
+        elif tokens[counter][0] == 'NEW_LINE':
             f.close()
             recursiveParse(counter+1)
         elif tokens[counter][0] == 'COMMENT_STATEMENT':
@@ -154,14 +183,22 @@ def recursiveParse(count = 0):
             f.close()
             recursiveParse(skip+1)
         elif tokens[counter][0] == 'FUNCTION_STATEMENT':
-            print('[start] ->')
-            f.write(str('[start] ->'+'\n'))
+            print(indent+'[FUNCTION_STATEMENT] ->')
+            f.write(str(indent+'[FUNCTION_STATEMENT] ->'+'\n'))
             f.close()
+            parent.add(counter)
             recursiveParse(counter+1)
         elif tokens[counter][0] == 'END_STATEMENT':
-            print('[end]')
-            f.write(str('[end]'+'\n'))
-            f.close()
+            if parent == {0}:
+                print(indent+'[END_FILE]')
+                f.write(str(indent+'[END_FILE]'+'\n'))
+                f.close()
+            else:
+                print(indent+'[END_STATEMENT]')
+                f.write(str(indent+'[END_STATEMENT]'+'\n'))
+                f.close()
+                parent.pop()
+                recursiveParse(counter+1)
         elif tokens[counter][0] == 'ID' or tokens[counter][0] == 'INTEGER':
             f.close()
             recursiveParse(counter+1)
@@ -175,36 +212,42 @@ def recursiveParse(count = 0):
             f.close()
             recursiveParse(counter+1)
         elif tokens[counter][0] == 'ASSIGNMENT_STATEMENT':
-            print('['+(tokens[counter][0])+'] -> [ID] [INTEGER]')
-            f.write(str('['+(tokens[counter][0])+']'+'\n'))
+            print(indent+'['+(tokens[counter][0])+'] -> [ID] [INTEGER]')
+            f.write(str(indent+'['+(tokens[counter][0])+'] -> [ID] [INTEGER]'+'\n'))
             if tokens[counter-1][0] == 'ID':
-                print('\t|[ID] -> ['+(tokens[counter-1][1])+']')
-                f.write(str('\t|[ID] -> ['+(tokens[counter-1][1])+']'+'\n'))
+                print(indent+'\t|[ID] -> ['+(tokens[counter-1][1])+']')
+                f.write(str(indent+'\t|[ID] -> ['+(tokens[counter-1][1])+']'+'\n'))
             else:
                 print('[ERROR]')
                 f.write(str('[ERROR]'+'\n'))
             if tokens[counter+1][0] == 'INTEGER':
-                print('\t|[INTEGER] -> ['+(tokens[counter+1][1])+']')
-                f.write(str('\t|[INTEGER] -> ['+(tokens[counter+1][1])+']'+'\n'))
+                print(indent+'\t|[INTEGER] -> ['+(tokens[counter+1][1])+']')
+                f.write(str(indent+'\t|[INTEGER] -> ['+(tokens[counter+1][1])+']'+'\n'))
             else:
                 print('[ERROR]')
                 f.write(str('[ERROR]'+'\n'))
             f.close()
             recursiveParse(counter+2)
         elif tokens[counter][0] == 'PRINT_STATEMENT':
-            print('['+(tokens[counter][0])+'] -> [ID]')
-            f.write(str('['+(tokens[counter][0])+']'+'\n'))
+            print(indent+'['+(tokens[counter][0])+'] -> [ID]')
+            f.write(str(indent+'['+(tokens[counter][0])+'] -> [ID]'+'\n'))
             if tokens[counter+2][0] == 'ID' and tokens[counter+1][0] == 'OPEN_PARENTHESIS' and tokens[counter+3][0] == 'CLOSED_PARENTHESIS':
-                print('\t|[ID] -> ['+(tokens[counter+2][1])+']')
-                f.write(str('\t|[ID] -> ['+(tokens[counter+2][1])+']'+'\n'))
+                print(indent+'\t|[ID] -> ['+(tokens[counter+2][1])+']')
+                f.write(str(indent+'\t|[ID] -> ['+(tokens[counter+2][1])+']'+'\n'))
             else:
                 print('[ERROR]')
                 f.write(str('[ERROR]'+'\n'))
             f.close()
             recursiveParse(counter+4)
+        elif tokens[counter][0] == 'WHILE_STATEMENT':
+            parent.add(counter)
+            print(indent+'['+(tokens[counter][0])+'] -> [STATEMENT] [DO]')
+            f.write(str(indent+'['+(tokens[counter][0])+'] -> [STATEMENT] [DO]'+'\n'))
+            f.close()
+            recursiveParse(counter+1)
         else:
-            print('['+(tokens[counter][0])+']')
-            f.write(str('['+(tokens[counter][0])+']'+'\n'))
+            print(indent+'['+(tokens[counter][0])+']')
+            f.write(str(indent+'['+(tokens[counter][0])+']'+'\n'))
             f.close()
             recursiveParse(counter+1)   
 
