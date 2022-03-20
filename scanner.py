@@ -1,3 +1,11 @@
+# 
+# Class:       CS 4308 Section 
+# Term:        Spring 2022
+# Name:        Aaron Cummings
+# Instructor:  Sharon Perry
+# Project:     Deliverable P1-P3 Scanner/Parser/Interpreter 
+# 
+
 from curses.ascii import isdigit   # requires '$ pip install windows-curses' on windows based systems.
 
 
