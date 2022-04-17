@@ -7,7 +7,6 @@
 # 
 
 from curses.ascii import isdigit
-from tkinter import Y   # requires '$ pip install windows-curses' on windows based systems.
 
 
 file = None
@@ -90,6 +89,14 @@ class parseTree():
         for i in self.tree:
             if i.nodeToken == node:
                 return i
+        return
+    
+    def findIndex(self, node):
+        counter = 0
+        for i in self.tree:
+            if i.nodeToken == node:
+                return counter
+            counter += 1
         return
     
     def printHelper(self, node):
@@ -437,7 +444,167 @@ def recursiveParse(count = 0):
             f.close()
             recursiveParse(counter+1)   
 
+def interpret():
+    global parseT
+    global tokens
+    ifCondition = False
+    functions = []
+    variables = []
 
+    def interpretTreeFunctions():
+        global parseT
+        nonlocal functions
+        global tokens
+        index = 0
+        for node in parseT.tree:
+            if parseT.tree[index].parentNode == None:
+                if tokens[parseT.tree[index].nodeToken][0] == 'FUNCTION_STATEMENT':
+                    functions.append([tokens[parseT.tree[index].childNodes[0]][1], index])
+            index += 1
+        for id in functions:
+            print('Function Name: '+id[0])
+        return
+    
+    def findVarIndex(name):
+        nonlocal variables
+        counter = 0
+        for var in variables:
+            if var[0] == name:
+                return counter
+            else:
+                counter += 1
+    
+    def isVar(name):
+        nonlocal variables
+        for var in variables:
+            if var[0] == name:
+                return True
+        return False
+
+    def interpretFunction(functionNode):
+        global parseT
+        global tokens
+        nonlocal variables
+        nonlocal ifCondition
+        if (tokens[parseT.tree[functionNode].nodeToken][0] == 'FUNCTION_STATEMENT') or (tokens[parseT.tree[functionNode].nodeToken][0] =='IF_STATEMENT') or (tokens[parseT.tree[functionNode].nodeToken][0] =='ELSE_STATEMENT'):
+            if tokens[parseT.tree[functionNode].nodeToken][0] == 'IF_STATEMENT':
+                if interpretFunction(parseT.findIndex(parseT.tree[functionNode].childNodes[0])) == False:
+                    return
+                else:
+                    ifCondition = True
+            
+            for child in parseT.tree[functionNode].childNodes:
+                # print("Current child:" + str(child) + str(tokens[child][0]))
+                if tokens[child][0] == 'ID':
+                    print('Function ID:'+str(tokens[child][1]))
+                if tokens[child][0] == 'ASSIGNMENT_STATEMENT':
+                    #print(parseT.findIndex(child))
+                    interpretFunction(parseT.findIndex(child))
+                if tokens[child][0] == 'PRINT_STATEMENT':
+                    #print(parseT.findIndex(child))
+                    interpretFunction(parseT.findIndex(child))
+                if tokens[child][0] == 'WHILE_STATEMENT':
+                    #print(parseT.findIndex(child))
+                    interpretFunction(parseT.findIndex(child))
+                if tokens[child][0] == 'IF_STATEMENT':
+                    #print(parseT.findIndex(child))
+                    interpretFunction(parseT.findIndex(child))
+                if tokens[child][0] == 'ELSE_STATEMENT':
+                    #print(parseT.findIndex(child))
+                    if ifCondition == False:
+                        interpretFunction(parseT.findIndex(child))
+                    else:
+                        ifCondition = False
+        elif tokens[parseT.tree[functionNode].nodeToken][0] == 'ADDITION_OPERATOR':
+            first = None
+            second = None
+            if tokens[parseT.tree[functionNode].childNodes[0]][0] == 'ID':
+                if isVar(tokens[parseT.tree[functionNode].childNodes[0]][1]):
+                    first = variables[findVarIndex(tokens[parseT.tree[functionNode].childNodes[0]][1])][1]
+                    #print(first)
+            elif tokens[parseT.tree[functionNode].childNodes[0]][0] == 'INTEGER':
+                first = tokens[parseT.tree[functionNode].childNodes[0]][1]
+                #print(first)
+            if tokens[parseT.tree[functionNode].childNodes[1]][0] == 'ID':
+                if isVar(tokens[parseT.tree[functionNode].childNodes[1]][1]):
+                    second = variables[findVarIndex(tokens[parseT.tree[functionNode].childNodes[1]][1])][1]
+                    #print(second)
+            elif tokens[parseT.tree[functionNode].childNodes[1]][0] == 'INTEGER':
+                second = tokens[parseT.tree[functionNode].childNodes[1]][1]
+                #print(second)
+            return int(first) + int(second)
+        elif tokens[parseT.tree[functionNode].nodeToken][0] == 'ASSIGNMENT_STATEMENT':
+            if isVar(tokens[parseT.tree[functionNode].childNodes[0]][1]) == False:
+                variables.append([tokens[parseT.tree[functionNode].childNodes[0]][1],tokens[parseT.tree[functionNode].childNodes[1]][1]])
+            elif tokens[parseT.tree[functionNode].childNodes[1]][0] == 'INTEGER':
+                variables[findVarIndex(tokens[parseT.tree[functionNode].childNodes[0]][1])][1] = tokens[parseT.tree[functionNode].childNodes[1]][1]
+            elif tokens[parseT.tree[functionNode].childNodes[1]][0] == 'ADDITION_OPERATOR':
+                variables[findVarIndex(tokens[parseT.tree[functionNode].childNodes[0]][1])][1] = interpretFunction(parseT.findIndex(parseT.tree[functionNode].childNodes[1]))
+            print("CURRENT_MEM: " +str(variables))
+        elif tokens[parseT.tree[functionNode].nodeToken][0] == 'PRINT_STATEMENT':
+            if (tokens[parseT.tree[functionNode].childNodes[0]][0] == 'ID') and (isVar(tokens[parseT.tree[functionNode].childNodes[0]][1]) == True):
+                print("consoleout$ " +str(variables[findVarIndex(tokens[parseT.tree[functionNode].childNodes[0]][1])][1]))
+            elif (tokens[parseT.tree[functionNode].childNodes[0]][0] == 'INTEGER'):
+                print("consoleout$ " +str(tokens[parseT.tree[functionNode].childNodes[0]][1]))
+            else:
+                print("INTERPRETOR ERROR")
+        elif tokens[parseT.tree[functionNode].nodeToken][0] == 'WHILE_STATEMENT':
+            if tokens[parseT.tree[functionNode].childNodes[0]][0] == 'EQUAL_TO_OPERATOR' or 'LESS_THAN_OPERATOR' or 'GREATER_THAN_OPERATOR':
+                #print(parseT.findIndex(parseT.tree[functionNode].childNodes[0]))
+                if interpretFunction(parseT.findIndex(parseT.tree[functionNode].childNodes[0])) == True:
+                    for child in parseT.tree[functionNode].childNodes:
+                        #print("Current child:" + str(child) + str(tokens[child][0]))
+                        if tokens[child][0] == 'ID':
+                            print('Function ID:'+str(tokens[child][1]))
+                        if tokens[child][0] == 'ASSIGNMENT_STATEMENT':
+                            #print(parseT.findIndex(child))
+                            interpretFunction(parseT.findIndex(child))
+                        if tokens[child][0] == 'PRINT_STATEMENT':
+                            #print(parseT.findIndex(child))
+                            interpretFunction(parseT.findIndex(child))
+                        if tokens[child][0] == 'END_STATEMENT':
+                            #print(parseT.findIndex(child))
+                            interpretFunction(functionNode)
+                    interpretFunction(functionNode)
+        elif tokens[parseT.tree[functionNode].nodeToken][0] =='EQUAL_TO_OPERATOR' or 'LESS_THAN_OPERATOR' or 'GREATER_THAN_OPERATOR':
+            first = None
+            second = None
+            if tokens[parseT.tree[functionNode].childNodes[0]][0] == 'ID':
+                if isVar(tokens[parseT.tree[functionNode].childNodes[0]][1]):
+                    first = variables[findVarIndex(tokens[parseT.tree[functionNode].childNodes[0]][1])][1]
+                    #print(first)
+            elif tokens[parseT.tree[functionNode].childNodes[0]][0] == 'INTEGER':
+                first = tokens[parseT.tree[functionNode].childNodes[0]][1]
+                #print(first)
+            if tokens[parseT.tree[functionNode].childNodes[1]][0] == 'ID':
+                if isVar(tokens[parseT.tree[functionNode].childNodes[1]][1]):
+                    second = variables[findVarIndex(tokens[parseT.tree[functionNode].childNodes[1]][1])][1]
+                    #print(second)
+            elif tokens[parseT.tree[functionNode].childNodes[1]][0] == 'INTEGER':
+                second = tokens[parseT.tree[functionNode].childNodes[1]][1]
+                #print(second)
+            if tokens[parseT.tree[functionNode].nodeToken][0] =='EQUAL_TO_OPERATOR':
+                if int(first) == int(second):
+                    return True
+            if tokens[parseT.tree[functionNode].nodeToken][0] =='LESS_THAN_OPERATOR':
+                if int(first) < int(second):
+                    return True
+            if tokens[parseT.tree[functionNode].nodeToken][0] =='GREATER_THAN_OPERATOR':
+                if int(first) > int(second):
+                    return True
+            return False
+        return
+    
+    interpretTreeFunctions()
+    while input('Enter "y" to interpret a function, enter to quit.\n') == 'y':
+        find = input('enter function name\n')
+        for i in functions:
+            if find == i[0]:
+                variables = []
+                print("----output-----")
+                interpretFunction(i[1])
+                print("---------------")
+    return
 
 while input('Enter "y" to interpret a .jl file, enter to quit.\n') == 'y':
     file = None
@@ -456,9 +623,10 @@ while input('Enter "y" to interpret a .jl file, enter to quit.\n') == 'y':
     print('----------------------------------')
     print('Starting Parse..')
     recursiveParse()
-    for node in parseT.tree:
-        print(tokens[node.nodeToken],node.nodeToken,node.parentNode,node.childNodes)
-    print()
-    parseT.printTree()
+    # for node in parseT.tree:
+    #     print(tokens[node.nodeToken],node.nodeToken,node.parentNode,node.childNodes)
+    # print()
+    # parseT.printTree()
+    interpret()
     #for token, lex in tokens:
     #    print(token+" : "+lex)
