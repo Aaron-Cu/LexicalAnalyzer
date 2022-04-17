@@ -6,7 +6,8 @@
 # Project:     Deliverable P1-P3 Scanner/Parser/Interpreter 
 # 
 
-from curses.ascii import isdigit   # requires '$ pip install windows-curses' on windows based systems.
+from curses.ascii import isdigit
+from tkinter import Y   # requires '$ pip install windows-curses' on windows based systems.
 
 
 file = None
@@ -43,26 +44,85 @@ TermsDictionary = {
 }
 TERMS = operands + keywords
 
-class parseTree():
-    class treeNode():
+class treeNode():
         nodeToken = None
+        parentNode = None
         childNodes = None
-        def __init__(self, tokenIn):
-            nodeToken = tokenIn
+        def __init__(self, nodeToken):
+            self.childNodes = []
+            self.nodeToken = nodeToken
+            return
+        
+        def addChild(self, child):
+            self.childNodes.append(child)
+            return
+        
+        def setParent(self, parent):
+            self.parentNode = parent
+            return
 
-    adjacencyList = None
-
+class parseTree():
+    tree = []
+    global tokens
     def __init__(self):
         return
     
-    def appendChildStatement(parent, child):
-        return
-    
-    def appendStatement(tokenIn):
+    def appendNode(self, parent, node):
+        if parent == -1: #and len(self.tree)==0
+            self.tree.append(treeNode(node))
+        elif self.isNode(parent) and not self.isNode(node):
+            self.tree.append(treeNode(node))
+            self.tree[len(self.tree)-1].setParent(parent)
+            self.findNode(parent).addChild(node)
+        elif self.isNode(parent) and self.isNode(node):
+            self.findNode(self.findNode(node).parentNode).childNodes.remove(node)
+            self.findNode(parent).addChild(node)
+            self.findNode(node).setParent(parent)
         return
 
-        
+    def isNode(self, node):
+        for i in self.tree:
+            if i.nodeToken == node:
+                return True
+        return False
+
+    def findNode(self, node):
+        for i in self.tree:
+            if i.nodeToken == node:
+                return i
+        return
     
+    def printHelper(self, node):
+        indent = ''
+        hasParent = True
+        parent = self.findNode(node).parentNode
+        while hasParent == True:
+            if parent != None:
+                indent = indent + '\t'
+                parent = self.findNode(parent).parentNode
+            else:
+             hasParent = False
+        print(indent + str(node) + str(tokens[node])+str(self.findNode(node).parentNode))
+        if len(self.findNode(node).childNodes) != 0:
+            children = self.findNode(node).childNodes
+            for child in children:
+                self.printHelper(child)
+        return
+
+    def printTree(self):
+        index = 0
+        for node in self.tree:
+            if self.tree[index].parentNode == None:
+                self.printHelper(self.tree[index].nodeToken)
+            index += 1
+        return
+
+parseT = parseTree()
+# parseT.appendNode(-1, 34857)
+# print(parseT.tree[0].nodeToken)
+# parseT.appendNode(34857, 89724)
+# print(parseT.findNode(34857).childNodes)
+# print(parseT.findNode(parseT.findNode(34857).childNodes[0]).parentNode)
 
 
 # Takes a user input file name, opens and saves the contents
@@ -173,9 +233,11 @@ def printTokens():
         print(tempToken)
         tempToken=''
 
-parent = {-1}
+parent = [-1]
 def recursiveParse(count = 0):
+    global parseT
     global parent
+    #print(parent)
     indent = ''
     for i in range(len(parent)):
         indent = indent+'\t|'
@@ -204,10 +266,13 @@ def recursiveParse(count = 0):
             print(indent+'[FUNCTION_STATEMENT] ->')
             f.write(str(indent+'[FUNCTION_STATEMENT] ->'+'\n'))
             f.close()
-            parent.add(counter)
+            parseT.appendNode(parent[len(parent)-1], counter)
+            parent.append(counter)
             recursiveParse(counter+1)
         elif tokens[counter][0] == 'END_STATEMENT':
-            if parent == {-1}:
+            if parent == []:
+                f.close()
+            elif parent == [-1]:
                 print("here"+ str(parent))
                 print('[END_FILE]')
                 f.write(str('[END_FILE]'+'\n'))
@@ -220,9 +285,11 @@ def recursiveParse(count = 0):
                 print(indent+'[END_STATEMENT]')
                 f.write(str(indent+'[END_STATEMENT]'+'\n'))
                 f.close()
+                parseT.appendNode(parent[len(parent)-1], counter)
                 recursiveParse(counter+1)
         elif tokens[counter][0] == 'ID' or tokens[counter][0] == 'INTEGER':
             f.close()
+            parseT.appendNode(parent[len(parent)-1], counter)
             recursiveParse(counter+1)
         elif tokens[counter][0] == 'TAB':
             f.close()
@@ -235,20 +302,24 @@ def recursiveParse(count = 0):
             recursiveParse(counter+1)
         elif tokens[counter][0] == 'ASSIGNMENT_STATEMENT':
             print(indent+'['+(tokens[counter][0])+'] -> [ID] [INTEGER] | [ID] [ARITHMETIC_STATEMENT]')
-            f.write(str(indent+'['+(tokens[counter][0])+'] -> [ID] [INTEGER]'+'\n'))
+            f.write(str(indent+'['+(tokens[counter][0])+'] -> [ID] [INTEGER] | [ID] [ARITHMETIC_STATEMENT]'+'\n'))
+            parseT.appendNode(parent[len(parent)-1], counter)
             if tokens[counter-1][0] == 'ID':
                 print(indent+'\t|[ID] -> ['+(tokens[counter-1][1])+']')
                 f.write(str(indent+'\t|[ID] -> ['+(tokens[counter-1][1])+']'+'\n'))
+                parseT.appendNode(counter, counter-1)
             else:
                 print('[ERROR]')
                 f.write(str('[ERROR]'+'\n'))
             if tokens[counter+1][0] == 'INTEGER':
                 print(indent+'\t|[INTEGER] -> ['+(tokens[counter+1][1])+']')
                 f.write(str(indent+'\t|[INTEGER] -> ['+(tokens[counter+1][1])+']'+'\n'))
+                parseT.appendNode(counter, counter+1)
             elif tokens[counter+2][0] == ('ADDITION_OPERATOR'):
                 print(indent+'\t|[ADDITION_OPERATOR] ->')
                 f.write(str(indent+'\t|[ADDITION_OPERATOR] ->'+'\n'))
-                parent.add(counter)
+                parseT.appendNode(counter, counter+2)
+                parent.append(counter)
             else:
                 print('[ERROR]')
                 f.write(str('[ERROR]'+'\n'))
@@ -257,60 +328,73 @@ def recursiveParse(count = 0):
         elif tokens[counter][0] == 'PRINT_STATEMENT':
             print(indent+'['+(tokens[counter][0])+'] -> [ID] | [INTEGER]')
             f.write(str(indent+'['+(tokens[counter][0])+'] -> [ID]'+'\n'))
+            parseT.appendNode(parent[len(parent)-1], counter)
             if (tokens[counter+2][0] == 'ID') and (tokens[counter+1][0] == 'OPEN_PARENTHESIS') and (tokens[counter+3][0] == 'CLOSED_PARENTHESIS'):
                 print(indent+'\t|[ID] -> ['+(tokens[counter+2][1])+']')
                 f.write(str(indent+'\t|[ID] -> ['+(tokens[counter+2][1])+']'+'\n'))
+                parseT.appendNode(counter, counter+2)
             elif (tokens[counter+2][0] == 'INTEGER') and (tokens[counter+1][0] == 'OPEN_PARENTHESIS') and (tokens[counter+3][0] == 'CLOSED_PARENTHESIS'):
                 print(indent+'\t|[INTEGER] -> ['+(tokens[counter+2][1])+']')
                 f.write(str(indent+'\t|[INTEGER] -> ['+(tokens[counter+2][1])+']'+'\n'))
+                parseT.appendNode(counter, counter+2)
             else:
                 print('[ERROR]')
                 f.write(str('[ERROR]'+'\n'))
             f.close()
             recursiveParse(counter+4)
         elif tokens[counter][0] == 'WHILE_STATEMENT':
-            parent.add(counter)
+            parseT.appendNode(parent[len(parent)-1], counter)
+            parent.append(counter)
             print(indent+'['+(tokens[counter][0])+'] -> [STATEMENT] [DO]')
             f.write(str(indent+'['+(tokens[counter][0])+'] -> [STATEMENT] [DO]'+'\n'))
             f.close()
-            recursiveParse(counter+1)
+            recursiveParse(counter+2)
         elif tokens[counter][0] == 'ADDITION_OPERATOR':
+            parseT.appendNode(parent[len(parent)-1], counter)
             if counter not in parent:
                 print(indent+'['+(tokens[counter][0])+'] -> [ID] [INTEGER] | [ID] [ARITHMETIC_STATEMENT]')
                 f.write(str(indent+'['+(tokens[counter][0])+'] -> [ID] [INTEGER]'+'\n'))
             if tokens[counter-1][0] == 'ID':
+                parseT.appendNode(counter, counter-1)
                 print(indent+'\t|[ID] -> ['+(tokens[counter-1][1])+']')
                 f.write(str(indent+'\t|[ID] -> ['+(tokens[counter-1][1])+']'+'\n'))
             else:
                 print('[ERROR]')
                 f.write(str('[ERROR]'+'\n'))
             if tokens[counter+1][0] == 'INTEGER':
+                parseT.appendNode(counter, counter+1)
                 print(indent+'\t|[INTEGER] -> ['+(tokens[counter+1][1])+']')
                 f.write(str(indent+'\t|[INTEGER] -> ['+(tokens[counter+1][1])+']'+'\n'))
+                f.close()
+                parent.pop()
+                #recursiveParse(counter+2)
             elif tokens[counter+2][0] == ('ADDITION_OPERATOR'):
+                parseT.appendNode(counter, counter+2)
                 print(indent+'\t|[ADDITION_OPERATOR] ->')
                 f.write(str(indent+'\t|[ADDITION_OPERATOR] ->'+'\n'))
-                parent.add(counter)
+                parent.append(counter)
             else:
                 print('[ERROR]')
                 f.write(str('[ERROR]'+'\n'))
             if counter in parent:
                 parent.pop()
             f.close()
-            recursiveParse(counter+1)
+            recursiveParse(counter+2)
         elif tokens[counter][0] == 'IF_STATEMENT':
-            parent.add(counter)
+            parseT.appendNode(parent[len(parent)-1], counter)
+            parent.append(counter)
             print(indent+'['+(tokens[counter][0])+']')
             f.write(str(indent+'['+(tokens[counter][0])+']'+'\n'))
             f.close()
-            recursiveParse(counter+1)
+            recursiveParse(counter+2)
         elif tokens[counter][0] == 'ELSE_STATEMENT':
             ifState = parent.pop()
             if tokens[ifState][0] == 'IF_STATEMENT':
                 indent = ''
                 for i in range(len(parent)):
                     indent = indent+'\t|'
-                parent.add(counter)
+                parseT.appendNode(parent[len(parent)-1], counter)
+                parent.append(counter)
                 print(indent+'['+(tokens[counter][0])+']')
                 f.write(str(indent+'['+(tokens[counter][0])+']'+'\n'))
             else:
@@ -318,6 +402,35 @@ def recursiveParse(count = 0):
                 f.write(str('[ERROR]'+'\n'))
             f.close()
             recursiveParse(counter+1)
+        elif tokens[counter][0] == 'EQUAL_TO_OPERATOR' or 'LESS_THAN_OPERATOR' or 'GREATER_THAN_OPERATOR':
+            parseT.appendNode(parent[len(parent)-1], counter)
+            if counter not in parent:
+                print(indent+'['+(tokens[counter][0])+'] -> [ID] [INTEGER] | [ID] [ARITHMETIC_STATEMENT]')
+                f.write(str(indent+'['+(tokens[counter][0])+'] -> [ID] [INTEGER]'+'\n'))
+            if tokens[counter-1][0] == 'ID':
+                parseT.appendNode(counter, counter-1)
+                print(indent+'\t|[ID] -> ['+(tokens[counter-1][1])+']')
+                f.write(str(indent+'\t|[ID] -> ['+(tokens[counter-1][1])+']'+'\n'))
+            else:
+                print('[ERROR]')
+                f.write(str('[ERROR]'+'\n'))
+            if tokens[counter+1][0] == 'INTEGER':
+                parseT.appendNode(counter, counter+1)
+                print(indent+'\t|[INTEGER] -> ['+(tokens[counter+1][1])+']')
+                f.write(str(indent+'\t|[INTEGER] -> ['+(tokens[counter+1][1])+']'+'\n'))
+                f.close()
+            elif tokens[counter+2][0] == ('ADDITION_OPERATOR'):
+                parseT.appendNode(counter, counter+2)
+                print(indent+'\t|[ADDITION_OPERATOR] ->')
+                f.write(str(indent+'\t|[ADDITION_OPERATOR] ->'+'\n'))
+                parent.append(counter)
+            else:
+                print('[ERROR]')
+                f.write(str('[ERROR]'+'\n'))
+            if counter in parent:
+                parent.pop()
+            f.close()
+            recursiveParse(counter+2) 
         else:
             print(indent+'['+(tokens[counter][0])+']')
             f.write(str(indent+'['+(tokens[counter][0])+']'+'\n'))
@@ -343,5 +456,9 @@ while input('Enter "y" to interpret a .jl file, enter to quit.\n') == 'y':
     print('----------------------------------')
     print('Starting Parse..')
     recursiveParse()
+    for node in parseT.tree:
+        print(tokens[node.nodeToken],node.nodeToken,node.parentNode,node.childNodes)
+    print()
+    parseT.printTree()
     #for token, lex in tokens:
     #    print(token+" : "+lex)
